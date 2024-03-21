@@ -9,18 +9,26 @@ using Microsoft.Data.SqlClient;
 using Candidate.Models;
 using Microsoft.AspNetCore.Routing.Matching;
 using System.Windows.Input;
+using Candidate;
+using Services;
 
-namespace Candidate.Controllers
+
+
+
+
+namespace Organization.Controllers
 {
     [ApiController]
     [Route("api/Organization")]
     public class OrganizationController : ControllerBase
     {
+        private readonly OrganizationServices _organizationService;
         private readonly IConfiguration _configuration;
 
-        public OrganizationController(IConfiguration configuration)
+        public OrganizationController(IConfiguration configuration, OrganizationServices organizationService)
         {
             _configuration = configuration;
+            _organizationService = organizationService;
         }
 
         [HttpPost("CreateOrg")]
@@ -109,38 +117,13 @@ namespace Candidate.Controllers
         {
             try
             {
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+                List<Org> getAllOrganizations = _organizationService.GetAllOrganizations();
 
-                List<Org> organizations = new List<Org>();
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                if (getAllOrganizations == null)
                 {
-                    connection.Open();
-
-                    string selectDataSql = "SELECT * FROM organization;";
-
-                    using (SqlCommand command = new SqlCommand(selectDataSql, connection))
-                    {
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                Org organization = new Org
-                                {
-                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Name = reader.GetString(reader.GetOrdinal("name")),
-                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                    CandidateIds = JsonSerializer.Deserialize<List<int>>(reader.GetString(reader.GetOrdinal("candidateIds"))),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                                };
-
-                                organizations.Add(organization);
-                            }
-                        }
-                    }
+                   return NotFound("Organization not found.");
                 }
-
-                return Ok(organizations);
+                return Ok(getAllOrganizations);
             }
             catch (Exception ex)
             {
@@ -152,36 +135,9 @@ namespace Candidate.Controllers
         {
             try
             {
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+               
+                Org organization = _organizationService.GetOrganization(id);
 
-                Org organization = null;
-
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string selectDataSql = "SELECT * FROM organization WHERE id = @id;";
-
-                    using (SqlCommand command = new SqlCommand(selectDataSql, connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                organization = new Org
-                                {
-                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Name = reader.GetString(reader.GetOrdinal("name")),
-                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                    CandidateIds = JsonSerializer.Deserialize<List<int>>(reader.GetString(reader.GetOrdinal("candidateIds"))),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                                };
-                            }
-                        }
-                    }
-                }
 
                 if (organization == null)
                 {
@@ -196,79 +152,14 @@ namespace Candidate.Controllers
             }
         }
 
+
+
         [HttpGet("GetOrgById/{id}/qualifiedCandidates")]
         public IActionResult MatchQuestions(int id)
         {
             try
             {
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-                Org organization = null;
-                List<Models.Candidate> queryResult = new List<Models.Candidate>();
-
-                // Fetch organization details
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string selectOrgDataSql = "SELECT MinAge, Questions FROM organization WHERE id = @id;";
-
-                    using (SqlCommand command = new SqlCommand(selectOrgDataSql, connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                organization = new Org
-                                {
-                                    MinAge = reader.GetInt32(reader.GetOrdinal("MinAge")),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                                };
-                            }
-                        }
-                    }
-                }
-
-                if (organization == null)
-                {
-                    return NotFound("Organization not found.");
-                }
-                else
-                {
-                    // Fetch qualified candidates based on MinAge and Questions
-                    using (SqlConnection connection = new SqlConnection(connectionString))
-                    {
-                        connection.Open();
-
-                        string selectCandidatesSql = "SELECT * FROM candidate WHERE Age >= @MinAge AND Questions = @Questions;";
-
-                        using (SqlCommand command = new SqlCommand(selectCandidatesSql, connection))
-                        {
-                            command.Parameters.AddWithValue("@MinAge", organization.MinAge);
-                            command.Parameters.AddWithValue("@Questions", JsonSerializer.Serialize(organization.Questions));
-
-                            using (SqlDataReader reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    Models.Candidate candidate = new Models.Candidate
-                                    {
-                                        Id = Convert.ToInt32(reader["id"]),
-                                        Name = reader["name"].ToString(),
-                                        Age = Convert.ToInt32(reader["age"]),
-                                        Orgs = JsonSerializer.Deserialize<List<int>>(reader["orgs"].ToString()),
-                                        Questions = JsonSerializer.Deserialize<List<bool>>(reader["questions"].ToString())
-                                    };
-
-                                    queryResult.Add(candidate);
-                                }
-                            }
-                        }
-                    }
-                }
-
+                List<Candidate.Models.Candidate> queryResult = _organizationService.GetQualifiedCandidates(id);
                 return Ok(queryResult);
             }
             catch (Exception ex)
