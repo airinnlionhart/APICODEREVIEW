@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using System.Text.Json;
 using Candidate.Models; // Import the namespace where Org and other related types are defined
-using Microsoft.Extensions.Configuration; // Import IConfiguration namespace
-using System.Diagnostics;
-using System.Security.Cryptography;
 
 namespace Services
 {
@@ -20,6 +15,7 @@ namespace Services
 
         public void CreateOrganizationTable()
         {
+            // Check to see if table exist and add it if it doesn't this is just for this project to make the reviewer life easier
             bool tableExists = false;
             string tableName = "organization";
             using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -75,167 +71,198 @@ namespace Services
 
         public void CreateOrganization(List<Org> orgList)
         {
-            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            try
             {
-                connection.Open();
-
-                foreach (var organization in orgList)
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    string insertDataSql = @"
-                            INSERT INTO organization (id, name, minAge, questions)
-                            VALUES (@id, @name, @minAge, @questions);
-                        ";
+                    connection.Open();
 
-                    using (SqlCommand command = new SqlCommand(insertDataSql, connection))
+                    foreach (var organization in orgList)
                     {
-                        command.Parameters.AddWithValue("@id", organization.Id);
-                        command.Parameters.AddWithValue("@name", organization.Name);
-                        command.Parameters.AddWithValue("@minAge", organization.MinAge);
-                        command.Parameters.AddWithValue("@questions", JsonSerializer.Serialize(organization.Questions));
+                        string insertDataSql = @"
+                                INSERT INTO organization (id, name, minAge, questions)
+                                VALUES (@id, @name, @minAge, @questions);
+                            ";
 
-                        command.ExecuteNonQuery();
+                        using (SqlCommand command = new SqlCommand(insertDataSql, connection))
+                        {
+                            command.Parameters.AddWithValue("@id", organization.Id);
+                            command.Parameters.AddWithValue("@name", organization.Name);
+                            command.Parameters.AddWithValue("@minAge", organization.MinAge);
+                            command.Parameters.AddWithValue("@questions", JsonSerializer.Serialize(organization.Questions));
+
+                            command.ExecuteNonQuery();
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine("Error creating Organization: " + ex.Message);
+            }
+
         }
 
 
         public List<Org> GetAllOrganizations()
         {
-            // Retrieve all organizations from the database and return them
-
-            //Variable to save a list of Organizations
-            List<Org> allOrganizations = new List<Org>();
-
-            //Connect to the database
-            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            // Retrieve top 100 organizations from the database and return them
+            try
             {
-                //open connection
-                connection.Open();
+                List<Org> allOrganizations = new List<Org>();
 
-                //create sql command
-                string queryString = "SELECT TOP 100 * FROM organization;";
-
-                //run sql command
-                using (SqlCommand command = new SqlCommand(queryString, connection))
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    //read the command
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Org organization = new Org
-                            {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                            };
+                    connection.Open();
 
-                            allOrganizations.Add(organization);
+                    string queryString = "SELECT TOP 100 * FROM organization;";
+
+                    using (SqlCommand command = new SqlCommand(queryString, connection))
+                    {
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Org organization = new Org
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
+                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
+                                };
+
+                                allOrganizations.Add(organization);
+                            }
                         }
                     }
+
                 }
 
+                return allOrganizations;
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine("Error unable to retrieve organization from database: " + ex.Message);
+                return new List<Org>();
             }
 
-            return allOrganizations;
         }
 
         public Org GetOrganization(int id)
         {
-
-            Org organization = null;
-
-            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            try
             {
-                connection.Open();
+                Org organization = null;
 
-                string selectDataSql = "SELECT * FROM organization WHERE id = @id;";
-
-                using (SqlCommand command = new SqlCommand(selectDataSql, connection))
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    command.Parameters.AddWithValue("@id", id);
+                    connection.Open();
 
-                    using (SqlDataReader reader = command.ExecuteReader())
+                    string selectDataSql = "SELECT * FROM organization WHERE id = @id;";
+
+                    using (SqlCommand command = new SqlCommand(selectDataSql, connection))
                     {
-                        if (reader.Read())
+                        command.Parameters.AddWithValue("@id", id);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            organization = new Org
+                            if (reader.Read())
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                Name = reader.GetString(reader.GetOrdinal("name")),
-                                MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                            };
+                                organization = new Org
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Name = reader.GetString(reader.GetOrdinal("name")),
+                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
+                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
+                                };
+                            }
                         }
                     }
                 }
-            }
 
-            return organization;
+                return organization;
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine("Error unable to retrieve organizations from database: " + ex.Message);
+                return new Org();
+
+            }
         }
 
-        public List<Candidate.Models.Candidate> GetQualifiedCandidates(int id)
+            public List<Candidate.Models.Candidate> GetQualifiedCandidates(int id)
         {
+             
             Org organization = GetOrganization(id);
             if (organization == null)
             {
                 // Organization not found
-                return null;
+                return new List<Candidate.Models.Candidate>();
             }
             else
             {
+                
                 return FetchQualifiedCandidates(organization);
+               
             }
         }
 
         private List<Candidate.Models.Candidate> FetchQualifiedCandidates(Org organization)
         {
-            List<Candidate.Models.Candidate> queryResult = new List<Candidate.Models.Candidate>();
-
-            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            try
             {
-                connection.Open();
+                List<Candidate.Models.Candidate> queryResult = new List<Candidate.Models.Candidate>();
 
-                string selectCandidatesSql = @"
-                    SELECT * 
-                    FROM candidate 
-                    WHERE Age >= @MinAge 
-                    AND Questions = @Questions 
-                    AND EXISTS (
-                        SELECT 1
-                        FROM OPENJSON(Orgs) WITH (OrgId int '$') AS Org
-                        WHERE Org.OrgId = @Id
-                    );
-                ";
-
-                using (SqlCommand command = new SqlCommand(selectCandidatesSql, connection))
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
-                    command.Parameters.AddWithValue("@MinAge", organization.MinAge);
-                    command.Parameters.AddWithValue("@Questions", JsonSerializer.Serialize(organization.Questions));
-                    command.Parameters.AddWithValue("@ID", organization.Id);
+                    connection.Open();
 
-                    using (SqlDataReader reader = command.ExecuteReader())
+                    string selectCandidatesSql = @"
+                        SELECT * 
+                        FROM candidate 
+                        WHERE Age >= @MinAge 
+                        AND Questions = @Questions 
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OPENJSON(Orgs) WITH (OrgId int '$') AS Org
+                            WHERE Org.OrgId = @Id
+                        );
+                    ";
+
+                    using (SqlCommand command = new SqlCommand(selectCandidatesSql, connection))
                     {
-                        while (reader.Read())
-                        {
-                            Candidate.Models.Candidate candidate = new Candidate.Models.Candidate
-                            {
-                                Id = Convert.ToInt32(reader["id"]),
-                                Name = reader["name"].ToString(),
-                                Age = Convert.ToInt32(reader["age"]),
-                                Orgs = JsonSerializer.Deserialize<List<int>>(reader["orgs"].ToString()),
-                                Questions = JsonSerializer.Deserialize<List<bool>>(reader["questions"].ToString())
-                            };
+                        command.Parameters.AddWithValue("@MinAge", organization.MinAge);
+                        command.Parameters.AddWithValue("@Questions", JsonSerializer.Serialize(organization.Questions));
+                        command.Parameters.AddWithValue("@ID", organization.Id);
 
-                            queryResult.Add(candidate);
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Candidate.Models.Candidate candidate = new Candidate.Models.Candidate
+                                {
+                                    Id = Convert.ToInt32(reader["id"]),
+                                    Name = reader["name"].ToString(),
+                                    Age = Convert.ToInt32(reader["age"]),
+                                    Orgs = JsonSerializer.Deserialize<List<int>>(reader["orgs"].ToString()),
+                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader["questions"].ToString())
+                                };
+
+                                queryResult.Add(candidate);
+                            }
                         }
                     }
+                    return queryResult;
                 }
-                return queryResult;
             }
-
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error unable to retrieve candidate from database: " + ex.Message);
+                return new List<Candidate.Models.Candidate>();
+            }
         }
     }
 }
