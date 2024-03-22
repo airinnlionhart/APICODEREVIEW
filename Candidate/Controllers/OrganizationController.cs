@@ -13,9 +13,6 @@ using Candidate;
 using Services;
 
 
-
-
-
 namespace Organization.Controllers
 {
     [ApiController]
@@ -41,69 +38,10 @@ namespace Organization.Controllers
                     return BadRequest("No organization provided.");
                 }
 
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-                // Check if the organization table exists
-                bool tableExists;
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string checkTableSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'organization';";
-                    using (SqlCommand command = new SqlCommand(checkTableSql, connection))
-                    {
-                        tableExists = (int)command.ExecuteScalar() > 0;
-                    }
-                }
-
-                // If the table doesn't exist, create it
-                if (!tableExists)
-                {
-                    using (SqlConnection connection = new SqlConnection(connectionString))
-                    {
-                        connection.Open();
-
-                        string createTableSql = @"
-                             CREATE TABLE organization (
-                             id INT PRIMARY KEY,
-                             name NVARCHAR(100),
-                             minAge INT,
-                             candidateIds NVARCHAR(MAX),
-                             questions NVARCHAR(MAX)
-                             );
-                             ";
-
-                        using (SqlCommand command = new SqlCommand(createTableSql, connection))
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                }
+                _organizationService.CreateOrganizationTable();
 
                 // Insert organizations into the database
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    foreach (var organization in orgList)
-                    {
-                        string insertDataSql = @"
-                            INSERT INTO organization (id, name, minAge, candidateIds, questions)
-                            VALUES (@id, @name, @minAge, @candidateIds, @questions);
-                        ";
-
-                        using (SqlCommand command = new SqlCommand(insertDataSql, connection))
-                        {
-                            command.Parameters.AddWithValue("@id", organization.Id);
-                            command.Parameters.AddWithValue("@name", organization.Name);
-                            command.Parameters.AddWithValue("@minAge", organization.MinAge);
-                            command.Parameters.AddWithValue("@candidateIds", JsonSerializer.Serialize(organization.CandidateIds));
-                            command.Parameters.AddWithValue("@questions", JsonSerializer.Serialize(organization.Questions));
-
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                }
+                _organizationService.CreateOrganization(orgList);
 
                 return Ok("Database initialized successfully.");
             }
@@ -112,6 +50,7 @@ namespace Organization.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
+
         [HttpGet("GetAllOrgs")]
         public IActionResult GetAllOrganizations()
         {
@@ -130,6 +69,7 @@ namespace Organization.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
+
         [HttpGet("GetOrgById/{id}")]
         public IActionResult GetOrganizationById(int id)
         {
@@ -151,8 +91,6 @@ namespace Organization.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
-
-
 
         [HttpGet("GetOrgById/{id}/qualifiedCandidates")]
         public IActionResult MatchQuestions(int id)

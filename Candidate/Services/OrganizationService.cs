@@ -4,6 +4,8 @@ using Microsoft.Data.SqlClient;
 using System.Text.Json;
 using Candidate.Models; // Import the namespace where Org and other related types are defined
 using Microsoft.Extensions.Configuration; // Import IConfiguration namespace
+using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace Services
 {
@@ -16,23 +18,97 @@ namespace Services
             _configuration = configuration;
         }
 
-        public string? ConnectionString()
+        public void CreateOrganizationTable()
         {
-            // Database initialization logic goes here
-            string connectionString = _configuration.GetConnectionString("DefaultConnection");
+            bool tableExists = false;
+            string tableName = "organization";
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                try
+                {
+                    connection.Open();
 
-            return connectionString;
+                    string checkTableSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @TableName;";
+                    using (SqlCommand command = new SqlCommand(checkTableSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@TableName", tableName);
+                        tableExists = (int)command.ExecuteScalar() > 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle or log the exception
+                    Console.WriteLine("Error checking table existence: " + ex.Message);
+                }
+            }
+
+            // If the table doesn't exist, create it
+            if (!tableExists)
+            {
+                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    try
+                    {
+                        connection.Open();
+
+                        string createTableSql = @"
+                    CREATE TABLE " + tableName + @" (
+                    id INT PRIMARY KEY,
+                    name NVARCHAR(100),
+                    minAge INT,
+                    questions NVARCHAR(MAX)
+                    );";
+
+                        using (SqlCommand command = new SqlCommand(createTableSql, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle or log the exception
+                        Console.WriteLine("Error creating table: " + ex.Message);
+                    }
+                }
+            }
         }
+
+        public void CreateOrganization(List<Org> orgList)
+        {
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+
+                foreach (var organization in orgList)
+                {
+                    string insertDataSql = @"
+                            INSERT INTO organization (id, name, minAge, questions)
+                            VALUES (@id, @name, @minAge, @questions);
+                        ";
+
+                    using (SqlCommand command = new SqlCommand(insertDataSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", organization.Id);
+                        command.Parameters.AddWithValue("@name", organization.Name);
+                        command.Parameters.AddWithValue("@minAge", organization.MinAge);
+                        command.Parameters.AddWithValue("@questions", JsonSerializer.Serialize(organization.Questions));
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
 
         public List<Org> GetAllOrganizations()
         {
             // Retrieve all organizations from the database and return them
-           
+
             //Variable to save a list of Organizations
             List<Org> allOrganizations = new List<Org>();
 
             //Connect to the database
-            using (SqlConnection connection = new SqlConnection(ConnectionString()))
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 //open connection
                 connection.Open();
@@ -41,7 +117,7 @@ namespace Services
                 string queryString = "SELECT TOP 100 * FROM organization;";
 
                 //run sql command
-                using(SqlCommand command = new SqlCommand(queryString, connection))
+                using (SqlCommand command = new SqlCommand(queryString, connection))
                 {
                     //read the command
                     using (SqlDataReader reader = command.ExecuteReader())
@@ -53,7 +129,6 @@ namespace Services
                                 Id = reader.GetInt32(reader.GetOrdinal("id")),
                                 Name = reader.GetString(reader.GetOrdinal("name")),
                                 MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                CandidateIds = JsonSerializer.Deserialize<List<int>>(reader.GetString(reader.GetOrdinal("candidateIds"))),
                                 Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
                             };
 
@@ -69,10 +144,10 @@ namespace Services
 
         public Org GetOrganization(int id)
         {
-            
+
             Org organization = null;
 
-            using (SqlConnection connection = new SqlConnection(ConnectionString()))
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
 
@@ -91,7 +166,6 @@ namespace Services
                                 Id = reader.GetInt32(reader.GetOrdinal("id")),
                                 Name = reader.GetString(reader.GetOrdinal("name")),
                                 MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                CandidateIds = JsonSerializer.Deserialize<List<int>>(reader.GetString(reader.GetOrdinal("candidateIds"))),
                                 Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
                             };
                         }
@@ -117,20 +191,31 @@ namespace Services
         }
 
         private List<Candidate.Models.Candidate> FetchQualifiedCandidates(Org organization)
-        { 
+        {
             List<Candidate.Models.Candidate> queryResult = new List<Candidate.Models.Candidate>();
 
-            using (SqlConnection connection = new SqlConnection(ConnectionString()))
+            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
 
-                string selectCandidatesSql = "SELECT * FROM candidate WHERE Age >= @MinAge AND Questions = @Questions;";
+                string selectCandidatesSql = @"
+                    SELECT * 
+                    FROM candidate 
+                    WHERE Age >= @MinAge 
+                    AND Questions = @Questions 
+                    AND EXISTS (
+                        SELECT 1
+                        FROM OPENJSON(Orgs) WITH (OrgId int '$') AS Org
+                        WHERE Org.OrgId = @Id
+                    );
+                ";
 
                 using (SqlCommand command = new SqlCommand(selectCandidatesSql, connection))
                 {
                     command.Parameters.AddWithValue("@MinAge", organization.MinAge);
                     command.Parameters.AddWithValue("@Questions", JsonSerializer.Serialize(organization.Questions));
-                    
+                    command.Parameters.AddWithValue("@ID", organization.Id);
+
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -150,7 +235,7 @@ namespace Services
                 }
                 return queryResult;
             }
-            
+
         }
     }
 }
