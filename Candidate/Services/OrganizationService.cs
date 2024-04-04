@@ -193,9 +193,9 @@ namespace Services
             }
         }
 
-            public List<Candidate.Models.Candidate> GetQualifiedCandidates(int id)
+        public List<Candidate.Models.Candidate> GetQualifiedCandidates(int id)
         {
-             
+
             Org organization = GetOrganization(id);
             if (organization == null)
             {
@@ -204,9 +204,9 @@ namespace Services
             }
             else
             {
-                
+
                 return FetchQualifiedCandidates(organization);
-               
+
             }
         }
 

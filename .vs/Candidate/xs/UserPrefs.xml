@@ -1,26 +1,36 @@
 ﻿<Properties GitUserInfo="UsingGIT" StartupConfiguration="{C0608BCA-5D07-411A-B431-9B5FF6F8A88F}|https">
-  <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
-  </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches>
     <Watch file="../../../../codeReview/QualificationChecker/QualificationChecker/Controllers/QualificationClass.cs" line="60" column="37" endLine="60" endColumn="46" offsetX="-1" offsetY="-1" expression="Candidate" liveUpdate="False" />
   </MonoDevelop.Ide.DebuggingService.PinnedWatches>
-  <MonoDevelop.Ide.Workbench ActiveDocument="Candidate/Controllers/CandidateController.cs">
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.ItemProperties.Candidate PreferredExecutionTarget="/Applications/Google Chrome.app" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Candidate/Controllers/OrganizationController.cs">
     <Files>
-      <File FileName="Candidate/appsettings.json" Line="11" Column="108" />
-      <File FileName="Candidate/appsettings.Development.json" />
-      <File FileName="Candidate/Models/Candidate.cs" Line="6" Column="6" />
-      <File FileName="Candidate/Controllers/CandidateController.cs" Line="131" Column="22" />
-      <File FileName="Candidate/Controllers/HomeController.cs" Line="178" Column="1" />
-      <File FileName="Candidate/Models/Orgs.cs" Line="9" Column="1" />
+      <File FileName="Candidate/appsettings.json" Line="10" Column="4" />
+      <File FileName="Candidate/appsettings.Development.json" Line="1" Column="1" />
+      <File FileName="Candidate/Models/Candidate.cs" Line="1" Column="1" />
+      <File FileName="Candidate/Controllers/CandidateController.cs" Line="7" Column="24" />
+      <File FileName="Candidate/Controllers/OrganizationController.cs" Line="4" Column="24" />
+      <File FileName="Candidate/Models/Orgs.cs" Line="9" Column="40" />
+      <File FileName="Candidate/Program.cs" Line="10" Column="64" />
+      <File FileName="Candidate/Properties/launchSettings.json" />
+      <File FileName="Candidate/Startup.cs" Line="25" Column="11" />
+      <File FileName="Candidate/Services/OrganizationService.cs" Line="200" Column="38" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="Candidate">
             <Node name="Candidate">
-              <Node name="Controllers" expanded="True" />
+              <Node name="Controllers" expanded="True">
+                <Node name="OrganizationController.cs" selected="True" />
+              </Node>
               <Node name="Models" expanded="True" />
+              <Node name="Services" expanded="True" />
+              <Node name="appsettings.json" expanded="True" />
             </Node>
           </Node>
         </State>
@@ -28,6 +38,4 @@
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <MultiItemStartupConfigurations />
-  <MonoDevelop.Ide.ItemProperties.Candidate PreferredExecutionTarget="/Applications/Google Chrome.app" />
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
 </Properties>

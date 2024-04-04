@@ -38,6 +38,7 @@ namespace Organization.Controllers
                     return BadRequest("No organization provided.");
                 }
 
+                // Check to make sure the table exist and create it if not
                 _organizationService.CreateOrganizationTable();
 
                 // Insert organizations into the database
