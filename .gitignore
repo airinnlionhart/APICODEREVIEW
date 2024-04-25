@@ -1,5 +1,5 @@
 Candidate/appsettings.json 
 Candidate/appsettings.local.json
-bin
+[Bb]in/
 [Oo]bj/
 .vs/
