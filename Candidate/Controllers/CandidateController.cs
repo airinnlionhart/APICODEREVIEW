@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Candidate.Models;
+using Services;
 
 namespace Candidate.Controllers
 {
@@ -13,10 +14,12 @@ namespace Candidate.Controllers
     public class CandidateController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly CandidateServices _candidateServics;
 
-        public CandidateController(IConfiguration configuration)
+        public CandidateController(IConfiguration configuration, CandidateServices candidatesService)
         {
             _configuration = configuration;
+            _candidateServics = candidatesService;
         }
 
         [HttpGet]
@@ -173,49 +176,21 @@ namespace Candidate.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
-        [HttpGet("GetCandidate/{id}")]
-        public IActionResult GetCandidate(int id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCandidateById(int id)
         {
             try
             {
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                Candidate.Models.Candidate candidate = await _candidateServics.GetCandidateAsync(id);
+
+
+                if (candidate == null)
                 {
-                    connection.Open();
-
-                    string getCandidateSql = @"
-                SELECT id, name, age, orgs, questions
-                FROM candidate
-                WHERE id = @id;
-            ";
-
-                    using (SqlCommand command = new SqlCommand(getCandidateSql, connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                var candidate = new Models.Candidate
-                                {
-                                    Id = reader.GetInt32(0),
-                                    Name = reader.GetString(1),
-                                    Age = reader.GetInt32(2),
-                                    Orgs = JsonSerializer.Deserialize<List<int>>(reader.GetString(3)),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(4))
-                                };
-
-                                return Ok(candidate);
-                            }
-                            else
-                            {
-                                return NotFound($"Candidate with ID {id} not found.");
-                            }
-                        }
-                    }
+                    return NotFound("No Candidate Found");
                 }
+
+                return Ok(candidate);
             }
             catch (Exception ex)
             {

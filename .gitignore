@@ -1,2 +1,5 @@
 Candidate/appsettings.json 
 Candidate/appsettings.local.json
+[Bb]in/
+[Oo]bj/
+.vs/
