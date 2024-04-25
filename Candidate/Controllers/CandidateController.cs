@@ -177,12 +177,12 @@ namespace Candidate.Controllers
             }
         }
         [HttpGet("{id}")]
-        public IActionResult GetCandidateById(int id)
+        public async Task<IActionResult> GetCandidateById(int id)
         {
             try
             {
 
-                Candidate.Models.Candidate candidate = _candidateServics.GetCandidate(id);
+                Candidate.Models.Candidate candidate = await _candidateServics.GetCandidateAsync(id);
 
 
                 if (candidate == null)
