@@ -176,7 +176,7 @@ namespace Candidate.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
-        [HttpGet("GetCandidateById/{id}")]
+        [HttpGet("{id}")]
         public IActionResult GetCandidateById(int id)
         {
             try
