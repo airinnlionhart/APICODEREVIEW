@@ -10,12 +10,12 @@ namespace Candidate.Controllers
     public class CandidateController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        private readonly CandidateServices _candidateService;
+        private readonly CandidateServices _candidateServics;
 
         public CandidateController(IConfiguration configuration, CandidateServices candidatesService)
         {
             _configuration = configuration;
-            _candidateService = candidatesService;
+            _candidateServics = candidatesService;
         }
 
         [HttpGet]
@@ -24,7 +24,7 @@ namespace Candidate.Controllers
             try
             {
 
-                List<Models.Candidate> candidates = await _candidateService.GetCandidateAsync(org, id);
+                List<Models.Candidate> candidates = await _candidateServics.GetCandidateAsync(org, id);
 
 
                 if (candidates == null)
@@ -45,7 +45,7 @@ namespace Candidate.Controllers
         {
             try
             {
-                string results = await _candidateService.CreateCandidateAsync(candidates);
+                string results = await _candidateServics.CreateCandidateAsync(candidates);
                 return Ok(results);
             }
             catch (Exception ex)
@@ -58,7 +58,7 @@ namespace Candidate.Controllers
         {
             try
             {
-                string result = await _candidateService.UpdateCandidateAsync(id, candidate);
+                string result = await _candidateServics.UpdateCandidateAsync(id, candidate);
                 if (result == "Candidate updated successfully")
                 {
                     return Ok(result);
@@ -84,7 +84,7 @@ namespace Candidate.Controllers
         {
             try
             {
-                string results = await _candidateService.DeleteCandidateAsync(id);
+                string results = await _candidateServics.DeleteCandidateAsync(id);
                 return Ok(results);
             }
             catch (Exception ex)

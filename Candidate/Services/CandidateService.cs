@@ -21,10 +21,6 @@ namespace Services
             
         }
 
-        public CandidateServices()
-        {
-        }
-
         private Candidate.Models.Candidate MapToCandidate(SqlDataReader reader)
         {
             return new Candidate.Models.Candidate
