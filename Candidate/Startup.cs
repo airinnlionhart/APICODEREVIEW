@@ -23,6 +23,10 @@ namespace YourNamespace
             services.AddControllers(); // Add MVC controllers
             services.AddSingleton<IConfiguration>(Configuration); // Add configuration service
             services.AddScoped<OrganizationServices>(); // Register the OrganizationService
+            services.AddHttpClient("default", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(5); // Set timeout to 30 seconds
+            });
             // Add other services as needed
         }
         
