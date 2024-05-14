@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-using Candidate.Models;
 using Services;
 
 namespace Candidate.Controllers
@@ -23,39 +19,20 @@ namespace Candidate.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAllCandidates()
+        public async Task<IActionResult> Candidates()
         {
             try
             {
-                string connectionString = _configuration.GetConnectionString("DefaultConnection");
-                List<Models.Candidate> queryResult = new List<Models.Candidate>();
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                List<Models.Candidate> candidates = await _candidateServics.GetAllCandidateAsync();
+
+
+                if (candidates == null)
                 {
-                    connection.Open();
-
-                    using (SqlCommand command = new SqlCommand("SELECT TOP 100 * FROM candidate;", connection))
-                    {
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                Models.Candidate candidate = new Models.Candidate
-                                {
-                                    Id = Convert.ToInt32(reader["id"]),
-                                    Name = reader["name"].ToString(),
-                                    Age = Convert.ToInt32(reader["age"]),
-                                    Orgs = JsonSerializer.Deserialize<List<int>>(reader["orgs"].ToString()),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader["questions"].ToString())
-                                };
-
-                                queryResult.Add(candidate);
-                            }
-                        }
-                    }
+                    return NotFound("No Candidate Found");
                 }
 
-                return Ok(queryResult);
+                return Ok(candidates);
             }
             catch (Exception ex)
             {
