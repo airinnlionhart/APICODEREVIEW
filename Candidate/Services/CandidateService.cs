@@ -34,7 +34,7 @@ namespace Services
         }
 
 
-        public async Task<List<Candidate.Models.Candidate>> GetAllCandidateAsync(int? org = null, int? id = null)
+        public async Task<List<Candidate.Models.Candidate>> GetCandidateAsync(int? org = null, int? id = null)
         {
             try
             {

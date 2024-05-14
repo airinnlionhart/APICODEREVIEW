@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Data.SqlClient;
 using Candidate.Models;
-using Microsoft.AspNetCore.Routing.Matching;
-using System.Windows.Input;
 using Candidate;
 using Services;
 

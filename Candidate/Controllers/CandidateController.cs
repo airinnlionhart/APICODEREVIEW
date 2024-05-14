@@ -24,7 +24,7 @@ namespace Candidate.Controllers
             try
             {
 
-                List<Models.Candidate> candidates = await _candidateServics.GetAllCandidateAsync(org, id);
+                List<Models.Candidate> candidates = await _candidateServics.GetCandidateAsync(org, id);
 
 
                 if (candidates == null)
