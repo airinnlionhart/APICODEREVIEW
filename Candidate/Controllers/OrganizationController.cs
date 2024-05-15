@@ -53,7 +53,7 @@ namespace Organization.Controllers
 
                 if (getAllOrganizations == null)
                 {
-                   return NotFound("Organization not found.");
+                    return NotFound("Organization not found.");
                 }
                 return Ok(getAllOrganizations);
             }
@@ -68,7 +68,7 @@ namespace Organization.Controllers
         {
             try
             {
-               
+
                 Org organization = _organizationService.GetOrganization(id);
 
 

@@ -12,7 +12,7 @@ public class UnitTest
 {
     private IConfiguration configuration;
     private CandidateServices _candidateService;
-   
+
     [TestInitialize]
     public void Initialize()
     {
@@ -45,17 +45,14 @@ public class UnitTest
                 }
             };
 
-
-
-
             // Act
             var result = await _candidateService.CreateCandidateAsync(candidate);
 
-            
+
             Assert.IsNotNull(result);
             Assert.AreEqual("Candidate created successfully", result);
             Console.WriteLine(result);
-            
+
         }
         catch (Exception ex)
         {
@@ -64,7 +61,7 @@ public class UnitTest
         }
     }
 
-    
+
 
     [TestMethod]
     public async Task GetCandidate()
@@ -88,9 +85,8 @@ public class UnitTest
                 }
             }
             Assert.IsNotNull(result);
-            Console.WriteLine(result.Value) ;
             Console.WriteLine(result.StatusCode);
-            
+
         }
         catch (Exception ex)
         {
@@ -117,7 +113,7 @@ public class UnitTest
             };
 
             // Act
-            var result = await _candidateService.UpdateCandidateAsync(id:0001, candidate);
+            var result = await _candidateService.UpdateCandidateAsync(id: 0001, candidate);
 
 
             Assert.IsNotNull(result);
@@ -156,7 +152,7 @@ public class UnitTest
             Assert.IsNotNull(result);
             Console.WriteLine(result.Value);
             Console.WriteLine(result.StatusCode);
-            
+
         }
         catch (Exception ex)
         {
@@ -173,7 +169,7 @@ public class UnitTest
             // Arrange
             var controller = new CandidateController(configuration, _candidateService);
 
-            
+
 
             // Act
             var result = await _candidateService.DeleteCandidateAsync(id: 0001);

@@ -19,7 +19,7 @@ namespace Candidate.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Candidates(int? org = null, int?  id = null)
+        public async Task<IActionResult> Candidates(int? org = null, int? id = null)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace Candidate.Controllers
                     return BadRequest(result);
                 }
             }
-            
+
             catch (Exception ex)
             {
                 return StatusCode(500, $"An error occurred: {ex.Message}");
@@ -92,6 +92,6 @@ namespace Candidate.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
- 
+
     }
 }

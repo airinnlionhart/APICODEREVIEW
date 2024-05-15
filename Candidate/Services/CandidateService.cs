@@ -12,13 +12,13 @@ namespace Services
         private const string Name = "DefaultConnection";
         private readonly IConfiguration _configuration;
         private readonly string _connectionString;
-        
+
 
         public CandidateServices(IConfiguration configuration)
         {
             _configuration = configuration;
             _connectionString = _configuration.GetConnectionString(Name);
-            
+
         }
 
         public CandidateServices()
@@ -53,7 +53,7 @@ namespace Services
 
                     if (org.HasValue)
                     {
-                        selectDataSql =  @"
+                        selectDataSql = @"
                             SELECT TOP 100
                             FROM candidate
                             WHERE EXISTS (
