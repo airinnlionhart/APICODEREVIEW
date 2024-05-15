@@ -108,7 +108,7 @@ namespace Services
                     }
                     return allOrganizations;
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -117,7 +117,7 @@ namespace Services
                 return new List<Org>();
             }
 
-            
+
 
         }
 

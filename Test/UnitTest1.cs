@@ -4,6 +4,7 @@ using Candidate.Models;
 using Services;
 using static Candidate.Controllers.CandidateController;
 using Microsoft.Extensions.Configuration;
+using Organization.Controllers;
 
 namespace Test;
 
@@ -12,6 +13,7 @@ public class UnitTest
 {
     private IConfiguration configuration;
     private CandidateServices _candidateService;
+    private OrganizationServices _organizationService;
 
     [TestInitialize]
     public void Initialize()
@@ -23,6 +25,7 @@ public class UnitTest
 
         // Initialize CandidateServices (use mock or actual service)
         _candidateService = new CandidateServices(configuration);
+        _organizationService = new OrganizationServices(configuration);
     }
     [TestMethod]
     public async Task CreateCandidate()
@@ -187,4 +190,159 @@ public class UnitTest
         }
     }
 
+
+    [TestMethod]
+    public async Task CreateOrg()
+    {
+        try
+        {
+            // Arrange
+            var controller = new OrganizationController(configuration, _organizationService);
+
+            List<Org> organization = new List<Org>
+
+                {
+                new Org
+                {
+                    Id = 0001,
+                    Name = "Test Org",
+                    MinAge = 16,
+                    Questions = new List<bool> { true, false, true }
+                }
+            };
+
+            // Act
+            var result = await _organizationService.CreateOrganizationAsync(organization);
+            // Act
+            
+
+            Assert.IsNotNull(result);
+            Console.WriteLine(result);
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception occurred: {ex}");
+            throw; // Rethrow the exception to fail the test
+        }
+    }
+
+
+
+    [TestMethod]
+    public async Task GetOrganization()
+    {
+        try
+        {
+            // Arrange
+            var controller = new OrganizationController(configuration, _organizationService);
+
+            // Act
+            var result = await controller.Organizations(id: 0001).ConfigureAwait(false) as ObjectResult;
+            
+            // Assert
+            if (result.Value is List<Org> orgList)
+            {
+                foreach (var org in orgList)
+                {
+                    Console.WriteLine(org.Name);
+                    Assert.AreEqual("Test Org", org.Name);
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception occurred: {ex}");
+            throw; // Rethrow the exception to fail the test
+        }
+    }
+
+    [TestMethod]
+    public async Task EditOrg()
+    {
+        try
+        {
+            // Arrange
+            var controller = new OrganizationController(configuration, _organizationService);
+
+            Org organization = new Org
+            {
+                Id = 0001,
+                Name = "Test Put",
+                MinAge = 16,
+                Questions = new List<bool> { true, false, true }
+            };
+
+
+            // Act
+            var result = await _organizationService.UpdateOrganizationAsync(id: 0001, organization);
+
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("Organization updated successfully", result);
+            Console.WriteLine(result);
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception occurred: {ex}");
+            throw; // Rethrow the exception to fail the test
+        }
+    }
+
+    [TestMethod]
+    public async Task GetOrgChange()
+    {
+        try
+        {
+            // Arrange
+            var controller = new OrganizationController(configuration, _organizationService);
+
+            // Act
+            var result = await controller.Organizations(id: 0001).ConfigureAwait(false) as ObjectResult;
+
+            // Assert
+            if (result.Value is List<Org> orgList)
+            {
+                foreach (var org in orgList)
+                {
+                    Console.WriteLine(org.Name);
+                    Assert.AreEqual("Test Put", org.Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception occurred: {ex}");
+            throw; // Rethrow the exception to fail the test
+        }
+    }
+
+    [TestMethod]
+    public async Task DeleteOrg()
+    {
+        try
+        {
+            // Arrange
+            var controller = new OrganizationController(configuration, _organizationService);
+
+
+
+            // Act
+            var result = await _organizationService.DeleteOrgAsync(id: 0001);
+            
+
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("Organization deleted successfully", result);
+            Console.WriteLine(result);
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception occurred: {ex}");
+            throw; // Rethrow the exception to fail the test
+        }
+    }
 }
