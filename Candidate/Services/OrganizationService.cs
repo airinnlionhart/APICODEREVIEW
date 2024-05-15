@@ -1,81 +1,133 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Text.Json;
 using Candidate.Models; // Import the namespace where Org and other related types are defined
+using Microsoft.AspNetCore.Http;
 
 namespace Services
 {
     public class OrganizationServices
     {
         private readonly IConfiguration _configuration;
+        private const string DBconnect = "DefaultConnection";
+        private readonly string _connectionString;
+
 
         public OrganizationServices(IConfiguration configuration)
         {
             _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString(DBconnect);
         }
 
-        public void CreateOrganizationTable()
+        private Org MapToOrg(SqlDataReader reader)
         {
-            // Check to see if table exist and add it if it doesn't this is just for this project to make the reviewer life easier
-            bool tableExists = false;
-            string tableName = "organization";
-            using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            return new Org
             {
-                try
-                {
-                    connection.Open();
-
-                    string checkTableSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @TableName;";
-                    using (SqlCommand command = new SqlCommand(checkTableSql, connection))
-                    {
-                        command.Parameters.AddWithValue("@TableName", tableName);
-                        tableExists = (int)command.ExecuteScalar() > 0;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Handle or log the exception
-                    Console.WriteLine("Error checking table existence: " + ex.Message);
-                }
-            }
-
-            // If the table doesn't exist, create it
-            if (!tableExists)
-            {
-                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                {
-                    try
-                    {
-                        connection.Open();
-
-                        string createTableSql = @"
-                    CREATE TABLE " + tableName + @" (
-                    id INT PRIMARY KEY,
-                    name NVARCHAR(100),
-                    minAge INT,
-                    questions NVARCHAR(MAX)
-                    );";
-
-                        using (SqlCommand command = new SqlCommand(createTableSql, connection))
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Handle or log the exception
-                        Console.WriteLine("Error creating table: " + ex.Message);
-                    }
-                }
-            }
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                Name = reader.GetString(reader.GetOrdinal("name")),
+                MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
+                Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
+            };
         }
 
-        public void CreateOrganization(List<Org> orgList)
+        public async Task<Org> GetOrganization(int id)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                Org organization = null;
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
+
+                    string selectDataSql = "SELECT * FROM organization WHERE id = @id;";
+
+                    using (SqlCommand command = new SqlCommand(selectDataSql, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", id);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                organization = MapToOrg(reader);
+                            }
+                        }
+                    }
+                }
+
+                return organization;
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine("Error unable to retrieve organizations from database: " + ex.Message);
+                return new Org();
+
+            }
+        }
+
+        public async Task<List<Org>> GetOrganizationsAsync(int? id = null)
+        {
+            // Retrieve top 100 organizations from the database and return them
+            try
+            {
+                List<Org> allOrganizations = new List<Org>();
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    string queryString = "SELECT * FROM organization";
+
+                    if (id.HasValue)
+                    {
+                        queryString += " WHERE id = @id;";
+                    }
+                    else
+                    {
+                        queryString = "SELECT TOP 100 * FROM organization;";
+                    }
+
+
+                    using (SqlCommand command = new SqlCommand(queryString, connection))
+                    {
+                        if (id.HasValue)
+                        {
+                            command.Parameters.AddWithValue("@id", id.Value);
+                        }
+
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                Org organization = MapToOrg(reader);
+
+                                allOrganizations.Add(organization);
+                            }
+                        }
+                    }
+                    return allOrganizations;
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine("Error unable to retrieve organization from database: " + ex.Message);
+                return new List<Org>();
+            }
+
+            
+
+        }
+
+        public async Task<string> CreateOrganizationAsync(List<Org> orgList)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
 
                     foreach (var organization in orgList)
                     {
@@ -95,108 +147,117 @@ namespace Services
                         }
                     }
                 }
+                return "Organization Create Succesfully";
             }
             catch (Exception ex)
             {
                 // Handle or log the exception
                 Console.WriteLine("Error creating Organization: " + ex.Message);
+                return "Organization Creation Failed";
             }
 
         }
 
-
-        public List<Org> GetAllOrganizations()
+        public async Task<string> UpdateOrganizationAsync(int id, Org organization)
         {
-            // Retrieve top 100 organizations from the database and return them
             try
             {
-                List<Org> allOrganizations = new List<Org>();
-
-                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
-                    connection.Open();
+                    await connection.OpenAsync();
 
-                    string queryString = "SELECT TOP 100 * FROM organization;";
+                    // Check if the candidate with the given ID exists
+                    string selectCandidateSql = "SELECT * FROM organization WHERE id = @id";
 
-                    using (SqlCommand command = new SqlCommand(queryString, connection))
+                    using (SqlCommand selectCommand = new SqlCommand(selectCandidateSql, connection))
                     {
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                Org organization = new Org
-                                {
-                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Name = reader.GetString(reader.GetOrdinal("name")),
-                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                                };
+                        selectCommand.Parameters.AddWithValue("@id", id);
 
-                                allOrganizations.Add(organization);
+                        using (SqlDataReader reader = await selectCommand.ExecuteReaderAsync())
+                        {
+                            if (!reader.Read())
+                            {
+                                return "Organization not found";
                             }
                         }
                     }
 
-                }
+                    // Update the candidate's information
+                    string updateDataSql = @"
+                                Update organization
+                                SET id = @id, name = @name, minAge = @minAge, questions = @questions
+                                Where id = @id;
+                            ";
 
-                return allOrganizations;
+                    using (SqlCommand updateCommand = new SqlCommand(updateDataSql, connection))
+                    {
+                        updateCommand.Parameters.AddWithValue("@id", id);
+                        updateCommand.Parameters.AddWithValue("@name", organization.Name);
+                        updateCommand.Parameters.AddWithValue("@minAge", organization.MinAge);
+                        updateCommand.Parameters.AddWithValue("@questions", JsonSerializer.Serialize(organization.Questions));
+
+                        int rowsAffected = await updateCommand.ExecuteNonQueryAsync();
+
+                        if (rowsAffected > 0)
+                        {
+                            return "Organization updated successfully";
+                        }
+                        else
+                        {
+                            return "Failed to update organization";
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
                 // Handle or log the exception
-                Console.WriteLine("Error unable to retrieve organization from database: " + ex.Message);
-                return new List<Org>();
+                Console.WriteLine("Error updating organization: " + ex.Message);
+                return "Error updating organization: " + ex.Message;
             }
-
         }
 
-        public Org GetOrganization(int id)
+
+
+        public async Task<string> DeleteOrgAsync(int id)
         {
             try
             {
-                Org organization = null;
-
-                using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
-                    connection.Open();
+                    await connection.OpenAsync();
 
-                    string selectDataSql = "SELECT * FROM organization WHERE id = @id;";
+                    string deleteDataSql = "DELETE FROM organization WHERE id = @id";
 
-                    using (SqlCommand command = new SqlCommand(selectDataSql, connection))
+                    using (SqlCommand command = new SqlCommand(deleteDataSql, connection))
                     {
                         command.Parameters.AddWithValue("@id", id);
 
-                        using (SqlDataReader reader = command.ExecuteReader())
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+
+                        if (rowsAffected > 0)
                         {
-                            if (reader.Read())
-                            {
-                                organization = new Org
-                                {
-                                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Name = reader.GetString(reader.GetOrdinal("name")),
-                                    MinAge = reader.GetInt32(reader.GetOrdinal("minAge")),
-                                    Questions = JsonSerializer.Deserialize<List<bool>>(reader.GetString(reader.GetOrdinal("questions")))
-                                };
-                            }
+                            return "Organization deleted successfully";
+                        }
+                        else
+                        {
+                            return "Organization not found";
                         }
                     }
                 }
-
-                return organization;
             }
             catch (Exception ex)
             {
                 // Handle or log the exception
-                Console.WriteLine("Error unable to retrieve organizations from database: " + ex.Message);
-                return new Org();
-
+                Console.WriteLine("Error deleting organization from database: " + ex.Message);
+                return null;
             }
         }
 
-        public List<Candidate.Models.Candidate> GetQualifiedCandidates(int id)
+        public async Task<List<Candidate.Models.Candidate>> GetQualifiedCandidatesAsync(int id)
         {
 
-            Org organization = GetOrganization(id);
+            Org organization = await GetOrganization(id);
             if (organization == null)
             {
                 // Organization not found
