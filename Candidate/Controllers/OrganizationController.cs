@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Candidate.Models;
 using Candidate;
 using Services;
+using System.Reflection;
 
 
 namespace Organization.Controllers
@@ -20,8 +21,8 @@ namespace Organization.Controllers
             _organizationService = organizationService;
         }
 
-        [HttpPost("CreateOrg")]
-        public IActionResult InitializeDatabase(List<Org> orgList)
+        [HttpPost()]
+        public async Task<ActionResult<string>> Organizations(List<Org> orgList)
         {
             try
             {
@@ -30,13 +31,10 @@ namespace Organization.Controllers
                     return BadRequest("No organization provided.");
                 }
 
-                // Check to make sure the table exist and create it if not
-                _organizationService.CreateOrganizationTable();
-
                 // Insert organizations into the database
-                _organizationService.CreateOrganization(orgList);
+                string results = await _organizationService.CreateOrganizationAsync(orgList);
 
-                return Ok("Database initialized successfully.");
+                return Ok(results);
             }
             catch (Exception ex)
             {
@@ -44,14 +42,14 @@ namespace Organization.Controllers
             }
         }
 
-        [HttpGet("GetAllOrgs")]
-        public IActionResult GetAllOrganizations()
+        [HttpGet()]
+        public async Task<IActionResult> Organizations(int? id = null)
         {
             try
             {
-                List<Org> getAllOrganizations = _organizationService.GetAllOrganizations();
+                List<Org> getAllOrganizations = await _organizationService.GetOrganizationsAsync(id);
 
-                if (getAllOrganizations == null)
+                if (getAllOrganizations.Count == 0 && id.HasValue)
                 {
                     return NotFound("Organization not found.");
                 }
@@ -63,21 +61,39 @@ namespace Organization.Controllers
             }
         }
 
-        [HttpGet("GetOrgById/{id}")]
-        public IActionResult GetOrganizationById(int id)
+        [HttpPut]
+        public async Task<ActionResult<string>> Organizations(int id, Org organization)
         {
             try
             {
-
-                Org organization = _organizationService.GetOrganization(id);
-
-
-                if (organization == null)
+                string result = await _organizationService.UpdateOrganizationAsync(id, organization);
+                if (result == "Candidate updated successfully")
                 {
-                    return NotFound("Organization not found.");
+                    return Ok(result);
                 }
+                else if (result == "Candidate not found")
+                {
+                    return NotFound(result);
+                }
+                else
+                {
+                    return BadRequest(result);
+                }
+            }
 
-                return Ok(organization);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        [HttpDelete]
+        public async Task<ActionResult<string>> DeleteCandidate(int id)
+        {
+            try
+            {
+                string results = await _organizationService.DeleteOrgAsync(id);
+                return Ok(results);
             }
             catch (Exception ex)
             {
@@ -85,12 +101,12 @@ namespace Organization.Controllers
             }
         }
 
-        [HttpGet("GetOrgById/{id}/qualifiedCandidates")]
-        public IActionResult MatchQuestions(int id)
+        [HttpGet("{id}/qualifiedCandidates")]
+        public async Task<IActionResult> MatchQuestions(int id)
         {
             try
             {
-                List<Candidate.Models.Candidate> queryResult = _organizationService.GetQualifiedCandidates(id);
+                List<Candidate.Models.Candidate> queryResult = await _organizationService.GetQualifiedCandidatesAsync(id);
                 return Ok(queryResult);
             }
             catch (Exception ex)

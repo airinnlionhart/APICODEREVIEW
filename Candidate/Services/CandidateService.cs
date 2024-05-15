@@ -9,7 +9,7 @@ namespace Services
 {
     public class CandidateServices
     {
-        private const string Name = "DefaultConnection";
+        private const string DBconnect = "DefaultConnection";
         private readonly IConfiguration _configuration;
         private readonly string _connectionString;
 
@@ -17,13 +17,10 @@ namespace Services
         public CandidateServices(IConfiguration configuration)
         {
             _configuration = configuration;
-            _connectionString = _configuration.GetConnectionString(Name);
+            _connectionString = _configuration.GetConnectionString(DBconnect);
 
         }
 
-        public CandidateServices()
-        {
-        }
 
         private Candidate.Models.Candidate MapToCandidate(SqlDataReader reader)
         {
