@@ -214,7 +214,7 @@ public class UnitTest
             // Act
             var result = await _organizationService.CreateOrganizationAsync(organization);
             // Act
-            
+
 
             Assert.IsNotNull(result);
             Console.WriteLine(result);
@@ -239,7 +239,7 @@ public class UnitTest
 
             // Act
             var result = await controller.Organizations(id: 0001).ConfigureAwait(false) as ObjectResult;
-            
+
             // Assert
             if (result.Value is List<Org> orgList)
             {
@@ -331,7 +331,7 @@ public class UnitTest
 
             // Act
             var result = await _organizationService.DeleteOrgAsync(id: 0001);
-            
+
 
 
             Assert.IsNotNull(result);
