@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Candidate;
 using Services;// Import the OrganizationServices namespace
 
-namespace YourNamespace
+namespace Candidate
 {
     public class Startup
     {
